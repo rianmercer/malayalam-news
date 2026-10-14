@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2a4a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Malayalam News</title>
+<style>
+  :root { --bg:#0b2a4a; --card:#ffffff; --ink:#111; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; background:var(--bg); font-family:system-ui,"Noto Sans Malayalam",sans-serif; }
+  header { color:#fff; text-align:center; padding:14px 8px 6px; font-size:26px; font-weight:700; }
+  header small { display:block; font-size:18px; font-weight:400; opacity:.85; margin-top:2px; }
+  #grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px; padding-bottom:max(24px, env(safe-area-inset-bottom)); }
+  .tile { background:var(--card); border:0; border-radius:20px; min-height:150px; padding:10px 8px;
+          display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+          font:inherit; color:var(--ink); box-shadow:0 4px 0 rgba(0,0,0,.35); }
+  .tile:active { transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.35); }
+  .logo { width:100%; height:80px; display:flex; align-items:center; justify-content:center; }
+  .logo img { max-width:90%; max-height:80px; object-fit:contain; }
+  .badge { width:100%; height:80px; border-radius:12px; color:#fff; display:flex; align-items:center; justify-content:center;
+           font-size:28px; font-weight:800; text-align:center; line-height:1.1; padding:4px; }
+  .name { font-size:24px; font-weight:700; text-align:center; line-height:1.2; }
+  #player { display:none; position:fixed; inset:0; background:#000; flex-direction:column; }
+  #player.on { display:flex; }
+  #bar { display:flex; gap:10px; padding:10px; padding-top:max(10px, env(safe-area-inset-top)); background:#000; }
+  #bar button, #bar a { flex:1; font:inherit; font-size:24px; font-weight:700; border:0; border-radius:16px; min-height:64px;
+                        display:flex; align-items:center; justify-content:center; text-decoration:none; }
+  #back { background:#ffd400; color:#000; }
+  #yt { background:#d00; color:#fff; }
+  #frameWrap { flex:1; position:relative; }
+  iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+  #hint { color:#ccc; font-size:20px; text-align:center; padding:10px; }
+</style>
+</head>
+<body>
+<header>വാർത്താ ചാനലുകൾ<small>ഒരു ചാനലിൽ തൊടുക</small></header>
+<main id="grid"></main>
+
+<section id="player" aria-label="Live news">
+  <div id="bar">
+    <button id="back">⬅ തിരികെ</button>
+    <a id="yt" target="_blank" rel="noopener">YouTube-ൽ തുറക്കുക</a>
+  </div>
+  <div id="frameWrap"></div>
+  <div id="hint">വീഡിയോ വന്നില്ലെങ്കിൽ ചുവന്ന ബട്ടൺ അമർത്തുക</div>
+</section>
+
+<script>
+// To add/remove a channel: edit this list. "id" is the YouTube channel ID (starts with UC).
+// Optional logo: put a file named <key>.png in the logos folder.
+const CHANNELS = [
+  { key:"asianet",     ml:"ഏഷ്യാനെറ്റ് ന്യൂസ്", en:"Asianet News",     id:"UCf8w5m0YsRa8MHQ5bwSGmbw", color:"#c8102e" },
+  { key:"manorama",    ml:"മനോരമ ന്യൂസ്",       en:"Manorama News",    id:"UCP0uG-mcMImgKnJz-VjJZmQ", color:"#b3001b" },
+  { key:"mathrubhumi", ml:"മാതൃഭൂമി ന്യൂസ്",    en:"Mathrubhumi News", id:"UCwXrBBZnIh2ER4lal6WbAHw", color:"#0a4d8c" },
+  { key:"twentyfour",  ml:"ട്വന്റിഫോർ ന്യൂസ്",   en:"24 News",          id:"UCup3etEdjyF1L3sRbU-rKLw", color:"#e4572e" },
+  { key:"reporter",    ml:"റിപ്പോർട്ടർ ടിവി",   en:"Reporter TV",      id:"UCFx1nseXKTc1Culiu3neeSQ", color:"#1b6e3c" },
+  { key:"kairali",     ml:"കൈരളി ന്യൂസ്",       en:"Kairali News",     id:"UCnEvxaWfVL91XIYuyQRO5QA", color:"#a4161a" },
+  { key:"janam",       ml:"ജനം ടിവി",           en:"Janam TV",         id:"UCNVkxRPqsBNejO6B9thG9Xw", color:"#e07a00" },
+  { key:"mediaone",    ml:"മീഡിയവൺ",           en:"MediaOne",         id:"UC-f7r46JhYv78q5pGrO6ivA", color:"#5b2a86" }
+];
+
+const grid = document.getElementById("grid");
+const player = document.getElementById("player");
+const wrap = document.getElementById("frameWrap");
+const yt = document.getElementById("yt");
+
+function esc(s){ return s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+CHANNELS.forEach(ch => {
+  const b = document.createElement("button");
+  b.className = "tile";
+  b.setAttribute("aria-label", ch.en);
+  b.innerHTML = '<div class="logo"></div><div class="name">' + esc(ch.ml) + '</div>';
+  const logoBox = b.querySelector(".logo");
+  const img = new Image();
+  img.alt = ch.en;
+  img.onload = () => logoBox.appendChild(img);
+  img.onerror = () => {
+    logoBox.innerHTML = '<div class="badge" style="background:' + ch.color + '">' + esc(ch.en) + '</div>';
+  };
+  img.src = "logos/" + ch.key + ".png";
+  b.addEventListener("click", () => openChannel(ch));
+  grid.appendChild(b);
+});
+
+function openChannel(ch) {
+  wrap.innerHTML = "";
+  const f = document.createElement("iframe");
+  f.src = "https://www.youtube.com/embed/live_stream?channel=" + encodeURIComponent(ch.id) + "&autoplay=1&playsinline=1&rel=0";
+  f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+  f.allowFullscreen = true;
+  wrap.appendChild(f);
+  yt.href = "https://www.youtube.com/channel/" + ch.id + "/live";
+  player.classList.add("on");
+  history.pushState({ playing:true }, "");
+}
+function closePlayer() {
+  player.classList.remove("on");
+  wrap.innerHTML = "";   // stops the video
+}
+document.getElementById("back").addEventListener("click", () => {
+  if (history.state && history.state.playing) history.back(); else closePlayer();
+});
+window.addEventListener("popstate", closePlayer);   // phone's own back button works too
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
