@@ -33,6 +33,14 @@
   #yt { background:#d00; color:#fff; }
   #frameWrap { flex:1; position:relative; }
   iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+  /* Landscape video mode: fill the whole screen and keep a simple back control visible. */
+  #player:fullscreen { width:100vw; height:100vh; background:#000; }
+  #player:fullscreen #frameWrap { position:absolute; inset:0; flex:none; }
+  #player:fullscreen #bar { position:absolute; z-index:5; top:0; left:0; right:0;
+                            background:transparent; pointer-events:none; }
+  #player:fullscreen #bar button { pointer-events:auto; flex:0 0 auto; width:auto;
+                                   min-width:104px; min-height:48px; font-size:18px; opacity:.88; }
+  #player:fullscreen #yt, #player:fullscreen #hint { display:none; }
   #hint { color:#ccc; font-size:20px; text-align:center; padding:10px; }
 </style>
 </head>
@@ -105,9 +113,30 @@ function openChannel(ch) {
   yt.href = ch.fallbackUrl || ("https://www.youtube.com/channel/" + ch.id + "/live");
   yt.textContent = ch.fallbackLabel || "YouTube-ൽ തുറക്കുക";
   player.classList.add("on");
-  history.pushState({ playing:true }, "");
+  // The native APK watches this hash to rotate into landscape. The fullscreen
+  // request also works in browsers that support the Fullscreen API.
+  history.pushState({ playing:true, channel:ch.key }, "", "#playing=" + encodeURIComponent(ch.key));
+  if (typeof player.requestFullscreen === "function") {
+    const request = player.requestFullscreen();
+    if (request && typeof request.then === "function") {
+      request.then(() => {
+        if (screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock("landscape").catch(() => {});
+        }
+      }).catch(() => {});
+    }
+  } else if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock("landscape").catch(() => {});
+  }
 }
 function closePlayer() {
+  if (document.fullscreenElement && document.exitFullscreen) {
+    const exit = document.exitFullscreen();
+    if (exit && typeof exit.catch === "function") exit.catch(() => {});
+  }
+  if (screen.orientation && screen.orientation.unlock) {
+    try { screen.orientation.unlock(); } catch (_) {}
+  }
   player.classList.remove("on");
   wrap.innerHTML = "";   // stops the video
 }
