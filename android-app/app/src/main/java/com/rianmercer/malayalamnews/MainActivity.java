@@ -134,13 +134,20 @@ public final class MainActivity extends Activity {
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.drawable.malayalam_news_logo);
         logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        logo.setAdjustViewBounds(true);
         logo.setContentDescription("Malayalam News");
-        splash.addView(logo, new LinearLayout.LayoutParams(dp(250), dp(250)));
+        int screenWidthDp = (int) (getResources().getDisplayMetrics().widthPixels
+                / getResources().getDisplayMetrics().density);
+        int logoSizeDp = Math.min(360, Math.max(260, screenWidthDp - 40));
+        splash.setPadding(dp(16), dp(16), dp(16), dp(16));
+        splash.addView(logo, new LinearLayout.LayoutParams(dp(logoSizeDp), dp(logoSizeDp)));
 
         ProgressBar progress = new ProgressBar(this);
         LinearLayout.LayoutParams progressParams =
                 new LinearLayout.LayoutParams(dp(34), dp(34));
         progressParams.topMargin = dp(16);
+        progress.setIndeterminateTintList(
+                android.content.res.ColorStateList.valueOf(Color.rgb(255, 212, 0)));
         splash.addView(progress, progressParams);
 
         TextView label = new TextView(this);

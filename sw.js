@@ -1,21 +1,53 @@
-// Caches only the app shell so the tile screen opens instantly. Video always streams live.
-const CACHE = "mlnews-v2";
-const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./malayalam-news-logo.webp", "./icon-192.png", "./icon-512.png"];
+// Cache the app shell and channel logos for fast repeat launches. Never cache YouTube streams.
+const CACHE = "mlnews-v3";
+const SHELL = [
+  "./", "./index.html", "./manifest.webmanifest",
+  "./icon-192.png", "./icon-512.png", "./malayalam-news-logo.webp",
+  "./logos/asianet.png", "./logos/manorama.png", "./logos/mathrubhumi.png",
+  "./logos/twentyfour.png", "./logos/reporter.png", "./logos/kairali.png",
+  "./logos/janam.png", "./logos/mediaone.png"
+];
 
-self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
+self.addEventListener("install", event => {
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
   self.skipWaiting();
 });
-self.addEventListener("activate", e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
+
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))
+    )
+  );
   self.clients.claim();
 });
-self.addEventListener("fetch", e => {
-  const url = new URL(e.request.url);
-  if (url.origin !== location.origin) return;           // never touch YouTube requests
-  e.respondWith(
-    fetch(e.request)
-      .then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return r; })
-      .catch(() => caches.match(e.request))
+
+self.addEventListener("fetch", event => {
+  const request = event.request;
+  const url = new URL(request.url);
+  if (request.method !== "GET" || url.origin !== self.location.origin) return;
+
+  const isAppAsset = request.mode === "navigate"
+    || /\.(html|png|webp|webmanifest)$/i.test(url.pathname);
+  if (!isAppAsset) return;
+
+  const refresh = caches.open(CACHE).then(cache =>
+    fetch(request).then(response => {
+      if (response && response.ok) cache.put(request, response.clone());
+      return response;
+    })
+  );
+  event.waitUntil(refresh.then(() => {}).catch(() => {}));
+
+  event.respondWith(
+    caches.match(request).then(cached => {
+      if (cached) return cached;
+      return refresh.catch(() => caches.match(request));
+    }).then(response =>
+      response || new Response("Malayalam News is unavailable offline.", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8" }
+      })
+    )
   );
 });

@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Keep the transition frame a solid brand colour; Android's system splash icon and
+     the in-app ImageView render the logo separately so it is never stretched or clipped. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/splash_background" />
-    <item>
-        <bitmap
-            android:src="@drawable/malayalam_news_logo"
-            android:gravity="center" />
-    </item>
 </layer-list>
