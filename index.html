@@ -54,12 +54,12 @@
 // Optional logo: put a file named <key>.png in the logos folder.
 const CHANNELS = [
   { key:"asianet",     ml:"ഏഷ്യാനെറ്റ് ന്യൂസ്", en:"Asianet News",     id:"UCf8w5m0YsRa8MHQ5bwSGmbw", color:"#c8102e" },
-  { key:"manorama",    ml:"മനോരമ ന്യൂസ്",       en:"Manorama News",    id:"UCP0uG-mcMImgKnJz-VjJZmQ", color:"#b3001b", fallbackUrl:"https://www.manoramanews.com/live-tv.html", fallbackLabel:"മനോരമ Live TV തുറക്കുക" },
+  { key:"manorama",    ml:"മനോരമ ന്യൂസ്",       en:"Manorama News",    id:"UCP0uG-mcMImgKnJz-VjJZmQ", color:"#b3001b", directUrl:"https://www.manoramanews.com/live-tv.html", fallbackUrl:"https://www.manoramanews.com/live-tv.html", fallbackLabel:"മനോരമ Live TV തുറക്കുക" },
   { key:"mathrubhumi", ml:"മാതൃഭൂമി ന്യൂസ്",    en:"Mathrubhumi News", id:"UCwXrBBZnIh2ER4lal6WbAHw", color:"#0a4d8c" },
   { key:"twentyfour",  ml:"ട്വന്റിഫോർ ന്യൂസ്",   en:"24 News",          id:"UCup3etEdjyF1L3sRbU-rKLw", color:"#e4572e" },
   { key:"reporter",    ml:"റിപ്പോർട്ടർ ടിവി",   en:"Reporter TV",      id:"UCFx1nseXKTc1Culiu3neeSQ", color:"#1b6e3c" },
-  { key:"kairali",     ml:"കൈരളി ന്യൂസ്",       en:"Kairali News",     id:"UCkCWitaToNG1_lR-Si1oMrg", color:"#a4161a", fallbackUrl:"https://www.youtube.com/@kairalinews/live" },
-  { key:"janam",       ml:"ജനം ടിവി",           en:"Janam TV",         id:"UCNVkxRPqsBNejO6B9thG9Xw", embedId:"T9Ol2JHqKlM", color:"#e07a00", fallbackUrl:"https://janamtv.com/live/", fallbackLabel:"ജനം Live TV തുറക്കുക" },
+  { key:"kairali",     ml:"കൈരളി ന്യൂസ്",       en:"Kairali News",     id:"UCnEvxaWfVL91XIYuyQRO5QA", color:"#a4161a", directUrl:"https://www.youtube.com/@kairalinews/live", fallbackUrl:"https://www.youtube.com/@kairalinews/live" },
+  { key:"janam",       ml:"ജനം ടിവി",           en:"Janam TV",         id:"UCNVkxRPqsBNejO6B9thG9Xw", color:"#e07a00", directUrl:"https://janamtv.com/live/", fallbackUrl:"https://janamtv.com/live/", fallbackLabel:"ജനം Live TV തുറക്കുക" },
   { key:"mediaone",    ml:"മീഡിയവൺ",           en:"MediaOne",         id:"UC-f7r46JhYv78q5pGrO6ivA", color:"#5b2a86" }
 ];
 
@@ -88,6 +88,12 @@ CHANNELS.forEach(ch => {
 });
 
 function openChannel(ch) {
+  // Some broadcasters do not allow their live stream to play through YouTube's live_stream embed endpoint.
+  // Open their official player page directly so playback does not depend on an unavailable embed.
+  if (ch.directUrl) {
+    window.location.href = ch.directUrl;
+    return;
+  }
   wrap.innerHTML = "";
   const f = document.createElement("iframe");
   f.src = ch.embedId
