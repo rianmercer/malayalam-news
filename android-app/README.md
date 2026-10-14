@@ -1,30 +1,38 @@
 # Malayalam News Android APK
 
-This is a lightweight Android WebView wrapper for the Malayalam News PWA hosted at:
+This Android app loads the Malayalam News channel-selection interface at:
 
 https://rianmercer.github.io/malayalam-news/
 
-The app keeps navigation to the selected official live-player page inside the app. It requires an internet connection and loads the website hosted on GitHub Pages.
+It uses Mozilla GeckoView and packages the unmodified uBlock Origin WebExtension in the APK.
 
 ## Build locally
 
-Install Android Studio (including Android SDK Platform 35) and JDK 17. From this folder, run:
+Install Android Studio, Android SDK Platform 35, and JDK 17. Run the build from this directory after downloading and extracting the official uBlock Origin Firefox XPI into:
+
+`app/src/main/assets/ublock/`
+
+The folder must contain the extension's `manifest.json`.
+
+Then run:
 
 ```bash
 gradle assembleDebug
 ```
 
-The debug APK is created at:
+The APK is created at:
 
 `app/build/outputs/apk/debug/app-debug.apk`
 
 ## Automated build
 
-The repository workflow `.github/workflows/build-android-apk.yml` builds a debug APK after relevant changes and uploads it as a downloadable GitHub Actions artifact. Open the latest successful run, then download the `Malayalam-News-APK` artifact.
+The GitHub Actions workflow downloads a pinned release of the official uBlock Origin Firefox extension, extracts it into the APK assets, compiles the app, and uploads a debug APK as an artifact.
 
 ## Important limitations
 
-- This is an app wrapper; it does not download or rebroadcast TV channels.
-- It does not block YouTube advertisements. YouTube's player and broadcaster websites control their advertising and playback.
-- A broadcaster can change or restrict its live stream at any time.
-- The APK is debug-signed for personal installation, not a Play Store release.
+- This is a personal-use APK; it is debug-signed, not Play Store release-signed.
+- The content blocker filters web requests using its standard lists. It cannot guarantee that every YouTube ad will be blocked, and YouTube may detect ad blocking or interrupt playback.
+- Blocking behaviour in an embedded GeckoView app is not as extensively validated as uBlock Origin in the normal Firefox Android browser. Test the target live channels before relying on it.
+- Broadcaster sites may still show server-delivered ads, sponsorships, or video ads that a browser blocker cannot reliably distinguish.
+- The app does not download or rebroadcast channel streams.
+- See `THIRD_PARTY_NOTICES.md` for the bundled extension's source and license.

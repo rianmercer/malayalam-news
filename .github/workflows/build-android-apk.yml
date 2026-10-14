@@ -35,6 +35,16 @@ jobs:
         with:
           gradle-version: "8.9"
 
+      - name: Bundle official uBlock Origin extension
+        run: |
+          mkdir -p android-app/app/src/main/assets/ublock
+          curl --fail --location --retry 3 \
+            "https://github.com/gorhill/uBlock/releases/download/1.75.0/uBlock0_1.75.0.firefox.signed.xpi" \
+            --output /tmp/uBlock0.firefox.signed.xpi
+          unzip -q /tmp/uBlock0.firefox.signed.xpi -d android-app/app/src/main/assets/ublock
+          test -f android-app/app/src/main/assets/ublock/manifest.json
+          grep -n '"id"' android-app/app/src/main/assets/ublock/manifest.json || true
+
       - name: Build debug APK
         working-directory: android-app
         run: gradle --no-daemon assembleDebug

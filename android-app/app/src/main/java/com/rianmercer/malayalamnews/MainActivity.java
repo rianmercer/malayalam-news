@@ -3,17 +3,27 @@ package com.rianmercer.malayalamnews;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+import android.util.Log;
+import android.widget.Toast;
+
+import org.mozilla.geckoview.GeckoResult;
+import org.mozilla.geckoview.GeckoRuntime;
+import org.mozilla.geckoview.GeckoSession;
+import org.mozilla.geckoview.GeckoView;
+import org.mozilla.geckoview.WebExtension;
 
 public final class MainActivity extends Activity {
+    private static final String TAG = "MalayalamNews";
     private static final String START_URL =
             "https://rianmercer.github.io/malayalam-news/";
+    private static final String UBLOCK_ASSET_PATH =
+            "resource://android/assets/ublock/";
+    private static final String UBLOCK_EXTENSION_ID =
+            "uBlock0@raymondhill.net";
 
-    private WebView webView;
+    private GeckoRuntime runtime;
+    private GeckoSession session;
+    private GeckoView geckoView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,55 +32,61 @@ public final class MainActivity extends Activity {
         getWindow().setStatusBarColor(Color.rgb(11, 42, 74));
         getWindow().setNavigationBarColor(Color.BLACK);
 
-        webView = new WebView(this);
-        webView.setBackgroundColor(Color.BLACK);
+        geckoView = new GeckoView(this);
+        geckoView.setBackgroundColor(Color.BLACK);
+        setContentView(geckoView);
 
-        WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setMediaPlaybackRequiresUserGesture(false);
-        settings.setLoadWithOverviewMode(true);
-        settings.setUseWideViewPort(true);
-        settings.setSupportMultipleWindows(false);
+        runtime = GeckoRuntime.create(this);
+        session = new GeckoSession();
+        session.open(runtime);
+        geckoView.setSession(session);
 
-        webView.setWebChromeClient(new WebChromeClient());
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(
-                    WebView view, WebResourceRequest request) {
-                // Keep the selected broadcaster's official page in this app.
-                return false;
-            }
+        // Load the channel app only after the bundled content-blocker extension
+        // has been registered. If the extension fails to load, the app remains usable.
+        GeckoResult<WebExtension> installResult =
+                runtime.getWebExtensionController().ensureBuiltIn(
+                        UBLOCK_ASSET_PATH, UBLOCK_EXTENSION_ID);
 
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                return false;
-            }
-        });
-
-        setContentView(webView);
-        if (savedInstanceState == null) {
-            webView.loadUrl(START_URL);
-        } else {
-            webView.restoreState(savedInstanceState);
-        }
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        if (webView != null) {
-            webView.saveState(outState);
-        }
-        super.onSaveInstanceState(outState);
+        installResult.accept(
+                extension -> {
+                    Log.i(TAG, "uBlock Origin extension registered.");
+                    runOnUiThread(() -> session.loadUri(START_URL));
+                },
+                error -> {
+                    Log.e(TAG, "Could not register uBlock Origin extension.", error);
+                    runOnUiThread(() -> {
+                        Toast.makeText(
+                                this,
+                                "Content blocker could not start; opening Malayalam News.",
+                                Toast.LENGTH_LONG
+                        ).show();
+                        session.loadUri(START_URL);
+                    });
+                }
+        );
     }
 
     @Override
     @SuppressWarnings("deprecation")
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
+        // GeckoView's session history handles returning from a broadcaster page
+        // to the channel-selection screen.
+        if (session != null) {
+            session.goBack();
         } else {
             super.onBackPressed();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (session != null) {
+            session.close();
+            session = null;
+        }
+        if (runtime != null) {
+            runtime = null;
+        }
+        super.onDestroy();
     }
 }
