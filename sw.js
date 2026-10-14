@@ -1,6 +1,6 @@
 // Caches only the app shell so the tile screen opens instantly. Video always streams live.
-const CACHE = "mlnews-v1";
-const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+const CACHE = "mlnews-v2";
+const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./malayalam-news-logo.webp", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));

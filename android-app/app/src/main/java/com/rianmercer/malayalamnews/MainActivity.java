@@ -5,10 +5,18 @@ import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.Toast;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import java.util.List;
 import java.util.Locale;
@@ -35,9 +43,12 @@ public final class MainActivity extends Activity {
                     | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
 
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Runnable splashTimeout = this::hideSplash;
+
     private GeckoRuntime runtime;
     private GeckoSession session;
-    private GeckoView geckoView;
+    private View splashView;
     private String currentUrl = START_URL;
     private boolean contentFullscreen = false;
 
@@ -47,15 +58,35 @@ public final class MainActivity extends Activity {
 
         getWindow().setStatusBarColor(Color.rgb(11, 42, 74));
         getWindow().setNavigationBarColor(Color.BLACK);
+        getWindow().setBackgroundDrawableResource(R.drawable.splash_screen);
 
-        geckoView = new GeckoView(this);
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(Color.rgb(4, 13, 42));
+
+        GeckoView geckoView = new GeckoView(this);
         geckoView.setBackgroundColor(Color.BLACK);
-        setContentView(geckoView);
+        root.addView(geckoView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+
+        splashView = createSplashView();
+        root.addView(splashView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        setContentView(root);
+        mainHandler.postDelayed(splashTimeout, 20000);
 
         runtime = GeckoRuntime.create(this);
         session = new GeckoSession();
         session.open(runtime);
         geckoView.setSession(session);
+
+        session.setProgressDelegate(new GeckoSession.ProgressDelegate() {
+            @Override
+            public void onPageStop(GeckoSession stoppedSession, boolean success) {
+                runOnUiThread(() -> hideSplash());
+            }
+        });
 
         session.setNavigationDelegate(new GeckoSession.NavigationDelegate() {
             @Override
@@ -77,8 +108,7 @@ public final class MainActivity extends Activity {
             }
         });
 
-        // Load the channel-selection page after registering the bundled extension.
-        // If the blocker fails to load, the channel app still opens normally.
+        // A blocker failure must not interrupt startup; keep diagnostics in Logcat.
         runtime.getWebExtensionController().ensureBuiltIn(
                 UBLOCK_ASSET_PATH, UBLOCK_EXTENSION_ID
         ).accept(
@@ -87,17 +117,60 @@ public final class MainActivity extends Activity {
                     runOnUiThread(() -> session.loadUri(START_URL));
                 },
                 error -> {
-                    Log.e(TAG, "Could not register uBlock Origin extension.", error);
-                    runOnUiThread(() -> {
-                        Toast.makeText(
-                                this,
-                                "Content blocker could not start; opening Malayalam News.",
-                                Toast.LENGTH_LONG
-                        ).show();
-                        session.loadUri(START_URL);
-                    });
+                    Log.e(TAG,
+                            "Could not register uBlock Origin; opening without content blocking.",
+                            error);
+                    runOnUiThread(() -> session.loadUri(START_URL));
                 }
         );
+    }
+
+    private View createSplashView() {
+        LinearLayout splash = new LinearLayout(this);
+        splash.setOrientation(LinearLayout.VERTICAL);
+        splash.setGravity(Gravity.CENTER);
+        splash.setBackgroundColor(Color.rgb(4, 13, 42));
+
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.malayalam_news_logo);
+        logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        logo.setContentDescription("Malayalam News");
+        splash.addView(logo, new LinearLayout.LayoutParams(dp(250), dp(250)));
+
+        ProgressBar progress = new ProgressBar(this);
+        LinearLayout.LayoutParams progressParams =
+                new LinearLayout.LayoutParams(dp(34), dp(34));
+        progressParams.topMargin = dp(16);
+        splash.addView(progress, progressParams);
+
+        TextView label = new TextView(this);
+        label.setText("വാർത്താ ചാനലുകൾ തുറക്കുന്നു…");
+        label.setTextColor(Color.WHITE);
+        label.setTextSize(16);
+        label.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams labelParams =
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT);
+        labelParams.topMargin = dp(12);
+        splash.addView(label, labelParams);
+        return splash;
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private void hideSplash() {
+        if (splashView == null) return;
+        mainHandler.removeCallbacks(splashTimeout);
+        View overlay = splashView;
+        splashView = null;
+        overlay.animate().alpha(0f).setDuration(220).withEndAction(() -> {
+            if (overlay.getParent() instanceof ViewGroup) {
+                ((ViewGroup) overlay.getParent()).removeView(overlay);
+            }
+        }).start();
     }
 
     private void applyPlaybackOrientation(String url) {
@@ -124,7 +197,6 @@ public final class MainActivity extends Activity {
 
     private boolean isPlaybackRoute(String url) {
         if (url == null) return false;
-
         String lower = url.toLowerCase(Locale.ROOT);
         if (lower.contains("#playing=")) return true;
 
@@ -133,8 +205,6 @@ public final class MainActivity extends Activity {
         if (host == null) return false;
         host = host.toLowerCase(Locale.ROOT);
 
-        // These channels open the broadcaster's own page rather than an embed.
-        // Keep that page in landscape until the user returns to the channel grid.
         if (host.equals("youtube.com") || host.endsWith(".youtube.com")) {
             return true;
         }
@@ -162,13 +232,12 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        mainHandler.removeCallbacks(splashTimeout);
         if (session != null) {
             session.close();
             session = null;
         }
-        if (runtime != null) {
-            runtime = null;
-        }
+        runtime = null;
         super.onDestroy();
     }
 }
