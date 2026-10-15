@@ -21,7 +21,7 @@
   header small { display:block; font-size:18px; font-weight:400; opacity:.85; margin-top:2px; }
   #grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px; padding-bottom:max(24px, env(safe-area-inset-bottom)); }
   /* Keep the seventh tile centred instead of stranded in the left column. */
-  #grid .tile[data-channel="janam"] { grid-column:1 / -1; justify-self:center; width:calc((100% - 12px) / 2); }
+  #grid .tile[data-channel="janam"] { grid-column:1 / -1; justify-self:center; width:min(50%, 620px); }
   .tile { background:var(--card); border:0; border-radius:20px; min-height:190px; padding:10px 8px;
           display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
           font:inherit; color:var(--ink); box-shadow:0 4px 0 rgba(0,0,0,.35); }
@@ -152,7 +152,7 @@ const CHANNELS = [
   { key:"mathrubhumi", ml:"മാതൃഭൂമി ന്യൂസ്",    en:"Mathrubhumi News", id:"UCwXrBBZnIh2ER4lal6WbAHw", color:"#0a4d8c" },
   { key:"twentyfour",  ml:"ട്വന്റിഫോർ ന്യൂസ്",   en:"24 News",          id:"UCup3etEdjyF1L3sRbU-rKLw", color:"#e4572e" },
   { key:"reporter",    ml:"റിപ്പോർട്ടർ ടിവി",   en:"Reporter TV",      id:"UCFx1nseXKTc1Culiu3neeSQ", color:"#1b6e3c" },
-  { key:"kairali",     ml:"കൈരളി ന്യൂസ്",       en:"Kairali News",     id:"UCnEvxaWfVL91XIYuyQRO5QA", color:"#a4161a", directUrl:"https://www.youtube.com/@kairalinews/live", fallbackUrl:"https://www.youtube.com/@kairalinews/live", fallbackLabel:"Kairali News Live തുറക്കുക" },
+  { key:"kairali",     ml:"കൈരളി ന്യൂസ്",       en:"Kairali News",     id:"UCnEvxaWfVL91XIYuyQRO5QA", embedId:"Kknj6voDgCM", color:"#a4161a", fallbackUrl:"https://www.youtube.com/@kairalinews/live", fallbackLabel:"Kairali News Live തുറക്കുക" },
   { key:"janam",       ml:"ജനം ടിവി",           en:"Janam TV",         id:"UCNVkxRPqsBNejO6B9thG9Xw", embedId:"T9Ol2JHqKlM", color:"#e07a00", fallbackUrl:"https://www.youtube.com/watch?v=T9Ol2JHqKlM", fallbackLabel:"YouTube-ൽ തുറക്കുക" },
 ];
 
