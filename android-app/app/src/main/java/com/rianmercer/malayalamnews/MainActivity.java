@@ -24,6 +24,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -222,6 +223,10 @@ public final class MainActivity extends Activity {
         logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
         logo.setAdjustViewBounds(true);
         logo.setContentDescription("Malayalam News logo");
+        logo.setAlpha(0f);
+        logo.setScaleX(0.58f);
+        logo.setScaleY(0.58f);
+        logo.setElevation(dp(12));
         int screenWidthDp = (int) (getResources().getDisplayMetrics().widthPixels
                 / getResources().getDisplayMetrics().density);
         int logoSizeDp = Math.min(330, Math.max(250, screenWidthDp - 48));
@@ -231,11 +236,24 @@ public final class MainActivity extends Activity {
         logoPulseX = ObjectAnimator.ofFloat(logo, View.SCALE_X, 0.975f, 1.025f);
         logoPulseY = ObjectAnimator.ofFloat(logo, View.SCALE_Y, 0.975f, 1.025f);
         for (ObjectAnimator animator : new ObjectAnimator[]{logoPulseX, logoPulseY}) {
-            animator.setDuration(950);
+            animator.setDuration(1050);
             animator.setRepeatMode(ValueAnimator.REVERSE);
             animator.setRepeatCount(ValueAnimator.INFINITE);
-            animator.start();
         }
+        logo.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setStartDelay(120L)
+                .setDuration(1500L)
+                .setInterpolator(new DecelerateInterpolator())
+                .withEndAction(() -> {
+                    if (!splashDismissed) {
+                        logoPulseX.start();
+                        logoPulseY.start();
+                    }
+                })
+                .start();
 
         LinearLayout bottom = new LinearLayout(this);
         bottom.setOrientation(LinearLayout.VERTICAL);
