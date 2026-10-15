@@ -98,7 +98,7 @@
   <div class="intro-bottom">
     <div class="intro-dots" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
     <div class="intro-loading">വാർത്തകൾ സജ്ജമാകുന്നു...</div>
-    <button id="introSound" class="intro-sound" type="button">♫ ശബ്ദം ഓണാക്കുക</button>
+    <button id="introSound" class="intro-sound" type="button" hidden>♫ ശബ്ദം ഓണാക്കുക</button>
   </div>
   <audio id="introAudio" preload="auto" src="startup_jingle.wav"></audio>
 </section>
@@ -291,7 +291,8 @@ if (isNativeApp) {
       }).catch(() => {
         // Sound autoplay is blocked by some browsers until the user taps.
         introSound.hidden = false;
-        armVisualTimer(5000);
+        introSound.textContent = "♫ ശബ്ദം തുടങ്ങാൻ ഇവിടെ തൊടുക";
+        armVisualTimer(8000);
       });
     } else {
       introStarted = true;
