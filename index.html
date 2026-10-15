@@ -20,6 +20,8 @@
   header { color:#fff; text-align:center; padding:14px 8px 6px; font-size:26px; font-weight:700; }
   header small { display:block; font-size:18px; font-weight:400; opacity:.85; margin-top:2px; }
   #grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px; padding-bottom:max(24px, env(safe-area-inset-bottom)); }
+  /* Keep the seventh tile centred instead of stranded in the left column. */
+  #grid .tile[data-channel="janam"] { grid-column:1 / -1; justify-self:center; width:calc((100% - 12px) / 2); }
   .tile { background:var(--card); border:0; border-radius:20px; min-height:190px; padding:10px 8px;
           display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
           font:inherit; color:var(--ink); box-shadow:0 4px 0 rgba(0,0,0,.35); }
@@ -146,7 +148,7 @@
 // Optional logo: put a file named <key>.png in the logos folder.
 const CHANNELS = [
   { key:"asianet",     ml:"ഏഷ്യാനെറ്റ് ന്യൂസ്", en:"Asianet News",     id:"UCf8w5m0YsRa8MHQ5bwSGmbw", color:"#c8102e" },
-  { key:"manorama",    ml:"മനോരമ ന്യൂസ്",       en:"Manorama News",    id:"UCP0uG-mcMImgKnJz-VjJZmQ", color:"#b3001b", directUrl:"https://www.manoramanews.com/live-tv.html", fallbackUrl:"https://www.manoramanews.com/live-tv.html", fallbackLabel:"മനോരമ Live TV തുറക്കുക" },
+  { key:"manorama",    ml:"മനോരമ ന്യൂസ്",       en:"Manorama News",    id:"UCP0uG-mcMImgKnJz-VjJZmQ", color:"#b3001b", directUrl:"https://www.manoramanews.com/live-tv.html", embedInPlayer:true, fallbackUrl:"https://www.manoramanews.com/live-tv.html", fallbackLabel:"മനോരമ Live TV തുറക്കുക" },
   { key:"mathrubhumi", ml:"മാതൃഭൂമി ന്യൂസ്",    en:"Mathrubhumi News", id:"UCwXrBBZnIh2ER4lal6WbAHw", color:"#0a4d8c" },
   { key:"twentyfour",  ml:"ട്വന്റിഫോർ ന്യൂസ്",   en:"24 News",          id:"UCup3etEdjyF1L3sRbU-rKLw", color:"#e4572e" },
   { key:"reporter",    ml:"റിപ്പോർട്ടർ ടിവി",   en:"Reporter TV",      id:"UCFx1nseXKTc1Culiu3neeSQ", color:"#1b6e3c" },
@@ -172,7 +174,7 @@ grid.querySelectorAll("[data-channel]").forEach(button => {
 function openChannel(ch) {
   // Some broadcasters do not allow their live stream to play through YouTube's live_stream embed endpoint.
   // Open their official player page directly so playback does not depend on an unavailable embed.
-  if (ch.directUrl) {
+  if (ch.directUrl && !ch.embedInPlayer) {
     window.location.href = ch.directUrl;
     return;
   }
@@ -185,9 +187,13 @@ function openChannel(ch) {
   wrap.appendChild(loading);
 
   const f = document.createElement("iframe");
-  f.src = ch.embedId
-    ? "https://www.youtube.com/embed/" + encodeURIComponent(ch.embedId) + "?autoplay=1&playsinline=1&rel=0"
-    : "https://www.youtube.com/embed/live_stream?channel=" + encodeURIComponent(ch.id) + "&autoplay=1&playsinline=1&rel=0";
+  f.title = ch.en + " live player";
+  f.referrerPolicy = "strict-origin-when-cross-origin";
+  f.src = ch.embedInPlayer
+    ? ch.directUrl
+    : (ch.embedId
+      ? "https://www.youtube.com/embed/" + encodeURIComponent(ch.embedId) + "?autoplay=1&playsinline=1&rel=0"
+      : "https://www.youtube.com/embed/live_stream?channel=" + encodeURIComponent(ch.id) + "&autoplay=1&playsinline=1&rel=0");
   f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
   f.allowFullscreen = true;
   f.addEventListener("load", () => {

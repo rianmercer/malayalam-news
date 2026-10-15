@@ -1,5 +1,5 @@
 // Cache the app shell and channel logos for fast repeat launches. Never cache YouTube streams.
-const CACHE = "mlnews-v10";
+const CACHE = "mlnews-v11";
 // Install only the small app shell. Channel art is cached as each visible image is requested,
 // so a first-time install doesn't wait for every logo download before activating.
 const SHELL = [
