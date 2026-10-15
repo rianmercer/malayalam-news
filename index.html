@@ -58,9 +58,51 @@
                                   max-width:44%; min-height:48px; padding:0 12px; font-size:16px; opacity:.92; }
   #player:fullscreen #hint { display:none; }
   #hint { color:#ccc; font-size:18px; text-align:center; padding:10px; }
+
+  .web-intro { position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column;
+    align-items:center; justify-content:space-between; padding:clamp(24px,5vh,54px) 16px;
+    overflow:hidden; color:#f5f1e8; background:radial-gradient(ellipse at 50% 48%,#092b60 0%,#061635 50%,#100621 100%);
+    opacity:1; transition:opacity 400ms ease; }
+  .web-intro.leaving { opacity:0; pointer-events:none; }
+  .web-intro[hidden] { display:none; }
+  .intro-frame { position:absolute; inset:14px; border:2px solid rgba(217,177,101,.78); border-radius:22px; pointer-events:none; }
+  .intro-rings { position:absolute; left:50%; top:49%; width:min(112vw,95vh); aspect-ratio:1; transform:translate(-50%,-50%); pointer-events:none; }
+  .intro-rings::before,.intro-rings::after { content:""; position:absolute; inset:7%; border:2px solid rgba(72,176,255,.35); border-radius:50%;
+    box-shadow:0 0 18px rgba(50,169,255,.16), inset 0 0 18px rgba(50,169,255,.12); animation:ripple 2.6s ease-out infinite; }
+  .intro-rings::after { inset:18%; border-color:rgba(237,195,113,.66); animation-delay:.55s; }
+  @keyframes ripple { 0%{transform:scale(.88);opacity:.45} 70%{opacity:.95} 100%{transform:scale(1.08);opacity:.25} }
+  .intro-top { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; gap:10px; font-size:clamp(16px,2.2vw,24px); font-weight:750; text-shadow:0 2px 10px #000; }
+  .intro-live { display:inline-flex; align-items:center; gap:6px; border-radius:8px; background:#dc1634; padding:7px 12px; box-shadow:0 0 20px rgba(255,35,60,.36); animation:livePulse 1.25s ease-in-out infinite; }
+  .intro-live-dot { width:9px; height:9px; background:white; border-radius:50%; }
+  @keyframes livePulse { 50%{box-shadow:0 0 27px rgba(255,35,60,.75);transform:scale(1.025)} }
+  .intro-logo { position:absolute; z-index:1; left:50%; top:49%; width:min(74vw,38vh,360px); height:auto; aspect-ratio:1/1;
+    transform:translate(-50%,-50%); object-fit:contain; filter:drop-shadow(0 0 18px rgba(45,162,255,.3)); animation:logoPulse 1.9s ease-in-out infinite; }
+  @keyframes logoPulse { 0%,100%{scale:1} 50%{scale:1.025} }
+  .intro-bottom { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center; margin-top:auto; }
+  .intro-dots { display:flex; gap:10px; align-items:center; justify-content:center; }
+  .intro-dots span { display:block; width:clamp(5px,1vw,10px); height:clamp(5px,1vw,10px); border-radius:50%; background:#e8bd70; animation:dotPulse 1.05s ease-in-out infinite; }
+  .intro-dots span:nth-child(2n){animation-delay:.12s}.intro-dots span:nth-child(3n){animation-delay:.24s}.intro-dots span:nth-child(4n){animation-delay:.36s}
+  @keyframes dotPulse { 0%,100%{opacity:.45;transform:scale(.82)} 50%{opacity:1;transform:scale(1.25)} }
+  .intro-loading { color:#f3dfb5; font-size:clamp(14px,1.8vw,19px); font-weight:700; text-shadow:0 1px 8px #000; }
+  .intro-sound { margin-top:2px; border:1px solid rgba(238,201,128,.6); color:#f7e4bc; background:rgba(5,16,43,.7); padding:8px 14px; border-radius:18px; font:inherit; font-size:14px; }
+  .intro-sound[hidden] { display:none; }
+  @media (prefers-reduced-motion: reduce) { .intro-rings::before,.intro-rings::after,.intro-live,.intro-logo,.intro-dots span { animation:none; } }
 </style>
 </head>
 <body>
+
+<section id="webIntro" class="web-intro" aria-label="Malayalam News introduction">
+  <div class="intro-frame"></div><div class="intro-rings"></div>
+  <div class="intro-top"><span class="intro-live"><span class="intro-live-dot"></span> LIVE</span><span>പ്രക്ഷേപണം</span></div>
+  <img class="intro-logo" src="malayalam-news-logo.webp" alt="Malayalam News logo">
+  <div class="intro-bottom">
+    <div class="intro-dots" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="intro-loading">വാർത്തകൾ സജ്ജമാകുന്നു...</div>
+    <button id="introSound" class="intro-sound" type="button">♫ ശബ്ദം ഓണാക്കുക</button>
+  </div>
+  <audio id="introAudio" preload="auto" src="startup_jingle.wav"></audio>
+</section>
+
 <header>വാർത്താ ചാനലുകൾ<small>ഒരു ചാനലിൽ തൊടുക</small></header>
 <main id="grid"></main>
 
@@ -197,6 +239,82 @@ document.getElementById("back").addEventListener("click", () => {
   if (history.state && history.state.playing) history.back(); else closePlayer();
 });
 window.addEventListener("popstate", closePlayer);   // phone's own back button works too
+
+
+const isNativeApp = new URLSearchParams(window.location.search).get("app") === "1";
+const webIntro = document.getElementById("webIntro");
+const introAudio = document.getElementById("introAudio");
+const introSound = document.getElementById("introSound");
+
+if (isNativeApp) {
+  // Android plays the same intro natively while GeckoView loads this page beneath it.
+  webIntro.hidden = true;
+  introAudio.pause();
+} else {
+  let introStarted = false;
+  let introElapsed = false;
+  let introEnded = false;
+  let introExitStarted = false;
+  let visualTimer = null;
+
+  function maybeCloseWebIntro() {
+    if (!introElapsed || (introStarted && !introEnded) || introExitStarted) return;
+    introExitStarted = true;
+    webIntro.classList.add("leaving");
+    setTimeout(() => { webIntro.hidden = true; }, 420);
+  }
+
+  function armVisualTimer(ms) {
+    if (visualTimer) clearTimeout(visualTimer);
+    visualTimer = setTimeout(() => {
+      introElapsed = true;
+      maybeCloseWebIntro();
+    }, ms);
+  }
+
+  function startWebJingle() {
+    if (introStarted) return;
+    introAudio.volume = 0;
+    const playResult = introAudio.play();
+    if (playResult && typeof playResult.then === "function") {
+      playResult.then(() => {
+        introStarted = true;
+        introSound.hidden = true;
+        const rampStart = performance.now();
+        function rampVolume(now) {
+          if (introAudio.paused || introAudio.ended) return;
+          introAudio.volume = Math.min(1, (now - rampStart) / 320);
+          if (introAudio.volume < 1) requestAnimationFrame(rampVolume);
+        }
+        requestAnimationFrame(rampVolume);
+        armVisualTimer(3000);
+      }).catch(() => {
+        // Sound autoplay is blocked by some browsers until the user taps.
+        introSound.hidden = false;
+        armVisualTimer(5000);
+      });
+    } else {
+      introStarted = true;
+      armVisualTimer(3000);
+    }
+  }
+
+  introSound.addEventListener("click", () => {
+    if (introExitStarted) return;
+    startWebJingle();
+  });
+  introAudio.addEventListener("ended", () => {
+    introEnded = true;
+    maybeCloseWebIntro();
+  });
+  introAudio.addEventListener("error", () => {
+    introEnded = true;
+    introStarted = false;
+    maybeCloseWebIntro();
+  });
+
+  startWebJingle();
+}
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
