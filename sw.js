@@ -1,11 +1,10 @@
 // Cache the app shell and channel logos for fast repeat launches. Never cache YouTube streams.
-const CACHE = "mlnews-v9";
+const CACHE = "mlnews-v10";
+// Install only the small app shell. Channel art is cached as each visible image is requested,
+// so a first-time install doesn't wait for every logo download before activating.
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest",
-  "./icon-192.png", "./icon-512.png", "./malayalam-news-logo.webp", "./startup_jingle.wav",
-  "./logos/asianet.png", "./logos/manorama.png", "./logos/mathrubhumi.png",
-  "./logos/twentyfour.png", "./logos/reporter.png", "./logos/kairali.png",
-  "./logos/janam.png", "./logos/mediaone.png"
+  "./icon-192.png", "./malayalam-news-logo.webp"
 ];
 
 self.addEventListener("install", event => {
@@ -28,7 +27,7 @@ self.addEventListener("fetch", event => {
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
 
   const isAppAsset = request.mode === "navigate"
-    || /\.(html|png|webp|webmanifest)$/i.test(url.pathname);
+    || /\.(html|png|webp|webmanifest|wav)$/i.test(url.pathname);
   if (!isAppAsset) return;
 
   const refresh = caches.open(CACHE).then(cache =>

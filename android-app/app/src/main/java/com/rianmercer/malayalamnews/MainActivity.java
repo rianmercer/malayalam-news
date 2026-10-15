@@ -49,7 +49,7 @@ public final class MainActivity extends Activity {
             "resource://android/assets/ublock/";
     private static final String UBLOCK_EXTENSION_ID =
             "uBlock0@raymondhill.net";
-    private static final long INTRO_MIN_MS = 3000L;
+    private static final long INTRO_MIN_MS = 1800L;
     private static final long INTRO_SAFETY_MS = 15000L;
     private static final int IMMERSIVE_FLAGS =
             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -385,7 +385,7 @@ public final class MainActivity extends Activity {
     }
 
     private void maybeDismissSplash() {
-        if (splashDismissed || !pageReady || !introTimeElapsed || !introAudioFinished) return;
+        if (splashDismissed || !pageReady || !introTimeElapsed) return;
         splashDismissed = true;
         mainHandler.removeCallbacks(introMinimumTimer);
         mainHandler.removeCallbacks(splashSafetyTimer);
@@ -465,7 +465,8 @@ public final class MainActivity extends Activity {
 
         SplashBackdropView() {
             super(MainActivity.this);
-            setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+            // Use the default hardware-accelerated canvas; a software canvas with multiple
+            // shadowed rings caused visible startup jank on mid-range phones.
         }
 
         void stop() { running = false; }
@@ -490,7 +491,7 @@ public final class MainActivity extends Activity {
 
             float cx = w * 0.5f, cy = h * 0.49f;
             float maxRadius = Math.min(w * 0.49f, h * 0.35f);
-            for (int i=0; i<7; i++) {
+            for (int i=0; i<5; i++) {
                 float pulse = 1f + 0.025f*(float)Math.sin(t*2.2f-i*0.5f);
                 float radius = maxRadius * (0.30f + i*0.105f) * pulse;
                 boolean gold = i % 3 == 0;
@@ -508,7 +509,7 @@ public final class MainActivity extends Activity {
             }
 
             particlePaint.setStyle(Paint.Style.FILL);
-            for (int i=0; i<24; i++) {
+            for (int i=0; i<14; i++) {
                 float x = w * (0.08f + ((i*37)%83)/100f);
                 float y = h * (0.20f + ((i*23)%63)/100f)
                         + dp(5)*(float)Math.sin(t*1.5f+i);
@@ -528,13 +529,13 @@ public final class MainActivity extends Activity {
             canvas.drawText("♫", w*0.78f, h*0.72f + dp(8)*(float)Math.sin(t*1.8f+2f), notePaint);
 
             paint.setStyle(Paint.Style.FILL);
-            for (int i=0; i<15; i++) {
+            for (int i=0; i<9; i++) {
                 float x = w*(0.27f+i*0.033f);
                 float r = dp(1.6f + 1.2f*(0.5f+0.5f*(float)Math.sin(t*5f+i)));
                 paint.setColor(Color.rgb(231, 185, 98));
                 canvas.drawCircle(x, h*0.88f, r, paint);
             }
-            if (running) postInvalidateDelayed(34L);
+            if (running) postInvalidateDelayed(66L);
         }
     }
 

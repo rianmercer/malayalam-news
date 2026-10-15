@@ -16,7 +16,7 @@
 <style>
   :root { --bg:#0b2a4a; --card:#ffffff; --ink:#111; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { margin:0; height:100%; background:var(--bg); font-family:"Noto Sans Malayalam", "Noto Sans", system-ui, sans-serif; font-synthesis:none; text-rendering:optimizeLegibility; }
+  html,body { margin:0; min-height:100%; background:var(--bg); font-family:"Noto Sans Malayalam", system-ui, sans-serif; font-synthesis:none; text-rendering:auto; }
   header { color:#fff; text-align:center; padding:14px 8px 6px; font-size:26px; font-weight:700; }
   header small { display:block; font-size:18px; font-weight:400; opacity:.85; margin-top:2px; }
   #grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px; padding-bottom:max(24px, env(safe-area-inset-bottom)); }
@@ -107,7 +107,29 @@
 </section>
 
 <header>വാർത്താ ചാനലുകൾ<small>ഒരു ചാനലിൽ തൊടുക</small></header>
-<main id="grid"></main>
+<main id="grid">
+  <button class="tile" data-channel="asianet" aria-label="Asianet News">
+    <div class="logo"><img src="logos/asianet.png" alt="Asianet News" loading="lazy" decoding="async" fetchpriority="low"></div><div class="name">ഏഷ്യാനെറ്റ് ന്യൂസ്</div>
+  </button>
+  <button class="tile" data-channel="manorama" aria-label="Manorama News">
+    <div class="logo"><img src="logos/manorama.png" alt="Manorama News" loading="lazy" decoding="async" fetchpriority="low"></div><div class="name">മനോരമ ന്യൂസ്</div>
+  </button>
+  <button class="tile" data-channel="mathrubhumi" aria-label="Mathrubhumi News">
+    <div class="logo"><img src="logos/mathrubhumi.png" alt="Mathrubhumi News" loading="lazy" decoding="async" fetchpriority="low"></div><div class="name">മാതൃഭൂമി ന്യൂസ്</div>
+  </button>
+  <button class="tile" data-channel="twentyfour" aria-label="24 News">
+    <div class="logo"><img src="logos/twentyfour.png" alt="24 News" loading="lazy" decoding="async" fetchpriority="low"></div><div class="name">ട്വന്റിഫോർ ന്യൂസ്</div>
+  </button>
+  <button class="tile" data-channel="reporter" aria-label="Reporter TV">
+    <div class="logo"><img src="logos/reporter.png" alt="Reporter TV" loading="lazy" decoding="async" fetchpriority="low"></div><div class="name">റിപ്പോർട്ടർ ടിവി</div>
+  </button>
+  <button class="tile" data-channel="kairali" aria-label="Kairali News">
+    <div class="logo"><img src="logos/kairali.png" alt="Kairali News" loading="lazy" decoding="async" fetchpriority="low"></div><div class="name">കൈരളി ന്യൂസ്</div>
+  </button>
+  <button class="tile" data-channel="janam" aria-label="Janam TV">
+    <div class="logo"><img src="logos/janam.png" alt="Janam TV" loading="lazy" decoding="async" fetchpriority="low"></div><div class="name">ജനം ടിവി</div>
+  </button>
+</main>
 
 <section id="player" aria-label="Live news">
   <div id="bar">
@@ -130,7 +152,6 @@ const CHANNELS = [
   { key:"reporter",    ml:"റിപ്പോർട്ടർ ടിവി",   en:"Reporter TV",      id:"UCFx1nseXKTc1Culiu3neeSQ", color:"#1b6e3c" },
   { key:"kairali",     ml:"കൈരളി ന്യൂസ്",       en:"Kairali News",     id:"UCnEvxaWfVL91XIYuyQRO5QA", color:"#a4161a", directUrl:"https://www.youtube.com/@kairalinews/live", fallbackUrl:"https://www.youtube.com/@kairalinews/live", fallbackLabel:"Kairali News Live തുറക്കുക" },
   { key:"janam",       ml:"ജനം ടിവി",           en:"Janam TV",         id:"UCNVkxRPqsBNejO6B9thG9Xw", embedId:"T9Ol2JHqKlM", color:"#e07a00", fallbackUrl:"https://www.youtube.com/watch?v=T9Ol2JHqKlM", fallbackLabel:"YouTube-ൽ തുറക്കുക" },
-  { key:"mediaone",    ml:"മീഡിയവൺ",           en:"MediaOne",         id:"UC-f7r46JhYv78q5pGrO6ivA", color:"#5b2a86" }
 ];
 
 const grid = document.getElementById("grid");
@@ -141,30 +162,11 @@ const retry = document.getElementById("retry");
 
 function esc(s){ return s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
-CHANNELS.forEach(ch => {
-  const b = document.createElement("button");
-  b.className = "tile";
-  b.setAttribute("aria-label", ch.en);
-  b.innerHTML = '<div class="logo"></div><div class="name">' + esc(ch.ml) + '</div>';
-  const logoBox = b.querySelector(".logo");
-  // Show a readable tile immediately, then replace it with the real channel logo.
-  // Do not use loading="lazy" on this detached Image: it is not in layout yet,
-  // so some browsers never start the load and the placeholder remains forever.
-  const placeholder = document.createElement("div");
-  placeholder.className = "badge";
-  placeholder.style.background = ch.color;
-  placeholder.textContent = ch.en;
-  logoBox.appendChild(placeholder);
-  const img = new Image();
-  img.alt = ch.en;
-  img.decoding = "async";
-  // Keep visual tile text responsive on slower mobile connections; images are lower priority.
-  try { img.fetchPriority = "low"; } catch (_) {}
-  img.onload = () => logoBox.replaceChildren(img);
-  img.onerror = () => console.error("Could not load channel logo:", ch.key);
-  img.src = "logos/" + ch.key + ".png";
-  b.addEventListener("click", () => openChannel(ch));
-  grid.appendChild(b);
+// Channel names and logo boxes are present in the HTML before JavaScript runs.
+// Bind taps only; do not create tiles dynamically or wait for images to reveal labels.
+grid.querySelectorAll("[data-channel]").forEach(button => {
+  const channel = CHANNELS.find(item => item.key === button.dataset.channel);
+  if (channel) button.addEventListener("click", () => openChannel(channel));
 });
 
 function openChannel(ch) {
@@ -308,7 +310,7 @@ if (isNativeApp) {
         // Sound autoplay is blocked by some browsers until the user taps.
         introSound.hidden = false;
         introSound.textContent = "♫ ശബ്ദം തുടങ്ങാൻ ഇവിടെ തൊടുക";
-        armVisualTimer(8000);
+        armVisualTimer(1700);
       });
     } else {
       introStarted = true;
@@ -317,7 +319,8 @@ if (isNativeApp) {
   }
 
   introSound.addEventListener("click", () => {
-    if (introExitStarted) return;
+    if (introStarted) return;
+    // Also allow the fallback button to start audio after the splash has faded.
     startWebJingle();
   });
   introAudio.addEventListener("ended", () => {
