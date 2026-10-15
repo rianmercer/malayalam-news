@@ -146,8 +146,9 @@ CHANNELS.forEach(ch => {
   b.setAttribute("aria-label", ch.en);
   b.innerHTML = '<div class="logo"></div><div class="name">' + esc(ch.ml) + '</div>';
   const logoBox = b.querySelector(".logo");
-  // Paint a usable tile immediately; replace the label when the logo arrives.
-  // Lazy, async logo fetches keep off-screen images from delaying first paint.
+  // Show a readable tile immediately, then replace it with the real channel logo.
+  // Do not use loading="lazy" on this detached Image: it is not in layout yet,
+  // so some browsers never start the load and the placeholder remains forever.
   const placeholder = document.createElement("div");
   placeholder.className = "badge";
   placeholder.style.background = ch.color;
@@ -156,9 +157,8 @@ CHANNELS.forEach(ch => {
   const img = new Image();
   img.alt = ch.en;
   img.decoding = "async";
-  img.loading = "lazy";
   img.onload = () => logoBox.replaceChildren(img);
-  img.onerror = () => {}; // keep the readable placeholder
+  img.onerror = () => console.error("Could not load channel logo:", ch.key);
   img.src = "logos/" + ch.key + ".png";
   b.addEventListener("click", () => openChannel(ch));
   grid.appendChild(b);
