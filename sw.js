@@ -1,5 +1,5 @@
 // Cache the app shell and channel logos for fast repeat launches. Never cache YouTube streams.
-const CACHE = "mlnews-v5";
+const CACHE = "mlnews-v6";
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./malayalam-news-logo.webp", "./startup_jingle.wav",

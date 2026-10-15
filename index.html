@@ -86,6 +86,8 @@
   .intro-loading { color:#f3dfb5; font-size:clamp(14px,1.8vw,19px); font-weight:700; text-shadow:0 1px 8px #000; }
   .intro-sound { margin-top:2px; border:1px solid rgba(238,201,128,.6); color:#f7e4bc; background:rgba(5,16,43,.7); padding:8px 14px; border-radius:18px; font:inherit; font-size:14px; }
   .intro-sound[hidden] { display:none; }
+  .intro-sound.persistent-sound { position:fixed; right:14px; bottom:14px; z-index:10001;
+    margin:0; box-shadow:0 4px 18px rgba(0,0,0,.48); background:#0b2a4a; }
   @media (prefers-reduced-motion: reduce) { .intro-rings::before,.intro-rings::after,.intro-live,.intro-logo,.intro-dots span { animation:none; } }
 </style>
 </head>
@@ -260,6 +262,13 @@ if (isNativeApp) {
   function maybeCloseWebIntro() {
     if (!introElapsed || (introStarted && !introEnded) || introExitStarted) return;
     introExitStarted = true;
+    // If the browser blocked audible autoplay, keep the fallback available
+    // on the dashboard rather than making the user catch it during the splash.
+    if (!introStarted && !introSound.hidden) {
+      introSound.classList.add("persistent-sound");
+      introSound.textContent = "♫ ശബ്ദം ഓണാക്കുക";
+      document.body.appendChild(introSound);
+    }
     webIntro.classList.add("leaving");
     setTimeout(() => { webIntro.hidden = true; }, 420);
   }
