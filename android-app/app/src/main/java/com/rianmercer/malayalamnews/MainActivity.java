@@ -68,6 +68,7 @@ public final class MainActivity extends Activity {
     private MediaPlayer startupPlayer;
     private ObjectAnimator logoPulseX;
     private ObjectAnimator logoPulseY;
+    private ObjectAnimator livePulseAnimator;
     private boolean introTimeElapsed = false;
     private boolean introAudioFinished = false;
     private boolean pageReady = false;
@@ -190,6 +191,11 @@ public final class MainActivity extends Activity {
         liveBg.setColor(Color.rgb(220, 22, 52));
         liveBg.setCornerRadius(dp(9));
         live.setBackground(liveBg);
+        livePulseAnimator = ObjectAnimator.ofFloat(live, View.ALPHA, 0.72f, 1f);
+        livePulseAnimator.setDuration(760L);
+        livePulseAnimator.setRepeatMode(ValueAnimator.REVERSE);
+        livePulseAnimator.setRepeatCount(ValueAnimator.INFINITE);
+        livePulseAnimator.start();
         topLine.addView(live);
 
         TextView broadcast = new TextView(this);
@@ -370,6 +376,7 @@ public final class MainActivity extends Activity {
         if (splashBackdrop != null) splashBackdrop.stop();
         if (logoPulseX != null) logoPulseX.cancel();
         if (logoPulseY != null) logoPulseY.cancel();
+        if (livePulseAnimator != null) livePulseAnimator.cancel();
         if (overlay == null) return;
         overlay.animate().alpha(0f).setDuration(400).withEndAction(() -> {
             if (overlay.getParent() instanceof ViewGroup) {
@@ -537,6 +544,7 @@ public final class MainActivity extends Activity {
         if (splashBackdrop != null) splashBackdrop.stop();
         if (logoPulseX != null) logoPulseX.cancel();
         if (logoPulseY != null) logoPulseY.cancel();
+        if (livePulseAnimator != null) livePulseAnimator.cancel();
         if (session != null) {
             session.close();
             session = null;
