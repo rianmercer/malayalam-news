@@ -1,5 +1,5 @@
 // Cache the app shell and channel logos for fast repeat launches. Never cache YouTube streams.
-const CACHE = "mlnews-v8";
+const CACHE = "mlnews-v9";
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./malayalam-news-logo.webp", "./startup_jingle.wav",
@@ -45,7 +45,7 @@ self.addEventListener("fetch", event => {
       // The native shell uses ?app=1 to suppress website audio. Reuse the
       // cached app-shell document regardless of that query parameter.
       const isShellDocument = request.mode === "navigate"
-        && (/\\/$/.test(url.pathname) || /\\/index\\.html$/i.test(url.pathname));
+        && (/\/$/.test(url.pathname) || /\/index\.html$/i.test(url.pathname));
       return (isShellDocument ? caches.match(request, { ignoreSearch: true }) : Promise.resolve(null))
         .then(shellCached => shellCached || refresh.catch(() => caches.match(request)));
     }).then(response =>
